@@ -36,7 +36,6 @@ body {
   border: 1px solid #243041;
   border-radius: 20px;
   padding: 28px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
 
 .setup-card h1,
@@ -173,7 +172,7 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin: 16px 0 16px;
+  margin: 16px 0;
   flex-wrap: wrap;
 }
 
@@ -195,20 +194,6 @@ body {
 .status-hint {
   color: #cbd5e1;
   font-size: 14px;
-}
-
-.names-input {
-  width: 100%;
-  min-height: 140px;
-  resize: none;
-  border-radius: 16px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: white;
-  padding: 14px;
-  font-size: 15px;
-  line-height: 1.5;
-  margin-bottom: 18px;
 }
 
 .primary-button,
@@ -385,7 +370,6 @@ body {
   font-weight: 700;
   user-select: none;
   transform: translate(-50%, -50%);
-  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28);
 }
 
 .player-marker span {
