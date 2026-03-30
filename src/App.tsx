@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import "./App.css";
 
 type Team = "red" | "white";
+type GameType = "5" | "7" | "8";
 
 type Player = {
   id: number;
@@ -11,124 +12,236 @@ type Player = {
   y: number;
 };
 
-const initialPlayers: Player[] = [
-  { id: 1, name: "Red 1", team: "red", x: 60, y: 40 },
-  { id: 2, name: "Red 2", team: "red", x: 60, y: 110 },
-  { id: 3, name: "Red 3", team: "red", x: 60, y: 180 },
-  { id: 4, name: "Red 4", team: "red", x: 60, y: 250 },
-  { id: 5, name: "Red 5", team: "red", x: 180, y: 70 },
-  { id: 6, name: "Red 6", team: "red", x: 180, y: 160 },
-  { id: 7, name: "Red 7", team: "red", x: 180, y: 250 },
-  { id: 8, name: "Red 8", team: "red", x: 180, y: 340 },
+const gameTypeOptions: Record<GameType, { label: string; totalPlayers: number; perTeam: number }> = {
+  "5": { label: "5-a-side", totalPlayers: 10, perTeam: 5 },
+  "7": { label: "7-a-side", totalPlayers: 14, perTeam: 7 },
+  "8": { label: "8-a-side", totalPlayers: 16, perTeam: 8 },
+};
 
-  { id: 9, name: "White 1", team: "white", x: 690, y: 40 },
-  { id: 10, name: "White 2", team: "white", x: 690, y: 110 },
-  { id: 11, name: "White 3", team: "white", x: 690, y: 180 },
-  { id: 12, name: "White 4", team: "white", x: 690, y: 250 },
-  { id: 13, name: "White 5", team: "white", x: 570, y: 70 },
-  { id: 14, name: "White 6", team: "white", x: 570, y: 160 },
-  { id: 15, name: "White 7", team: "white", x: 570, y: 250 },
-  { id: 16, name: "White 8", team: "white", x: 570, y: 340 },
-];
+const shuffleArray = <T,>(items: T[]) => {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+};
+
+const getVerticalPositions = (perTeam: number) => {
+  const leftX = 145;
+  const rightX = 395;
+  const top = 110;
+  const bottom = 750;
+  const spacing = perTeam === 1 ? 0 : (bottom - top) / (perTeam - 1);
+
+  const red = Array.from({ length: perTeam }, (_, index) => ({
+    x: leftX,
+    y: top + index * spacing,
+  }));
+
+  const white = Array.from({ length: perTeam }, (_, index) => ({
+    x: rightX,
+    y: top + index * spacing,
+  }));
+
+  return { red, white };
+};
+
+const buildPlayers = (names: string[], gameType: GameType): Player[] => {
+  const { perTeam } = gameTypeOptions[gameType];
+  const shuffledNames = shuffleArray(names);
+  const { red, white } = getVerticalPositions(perTeam);
+
+  return shuffledNames.map((name, index) => {
+    const team: Team = index < perTeam ? "red" : "white";
+    const position = team === "red" ? red[index] : white[index - perTeam];
+
+    return {
+      id: index + 1,
+      name,
+      team,
+      x: position.x,
+      y: position.y,
+    };
+  });
+};
+
+const getDefaultNames = (gameType: GameType) => {
+  const { totalPlayers } = gameTypeOptions[gameType];
+  return Array.from({ length: totalPlayers }, (_, index) => `Player ${index + 1}`).join("\n");
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 export default function App() {
-  const [players, setPlayers] = useState<Player[]>(initialPlayers);
-  const [newName, setNewName] = useState("");
-  const [team, setTeam] = useState<Team>("red");
+  const [step, setStep] = useState<"setup" | "pitch">("setup");
+  const [gameType, setGameType] = useState<GameType>("8");
+  const [namesInput, setNamesInput] = useState(getDefaultNames("8"));
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
 
-  const movePlayer = (id: number, x: number, y: number) => {
-    setPlayers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, x, y } : p))
-    );
-  };
+  const config = gameTypeOptions[gameType];
 
-  const addPlayer = () => {
-    if (!newName.trim()) return;
-
-    const nextId = players.length
-      ? Math.max(...players.map((p) => p.id)) + 1
-      : 1;
-
-    setPlayers([
-      ...players,
-      {
-        id: nextId,
-        name: newName,
-        team,
-        x: team === "red" ? 100 : 650,
-        y: 420,
-      },
-    ]);
-
-    setNewName("");
-  };
-
-  return (
-    <div className="app">
-      <h1>Football Team Board</h1>
-
-      <div className="controls">
-        <input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="Player name"
-        />
-        <select
-          value={team}
-          onChange={(e) => setTeam(e.target.value as Team)}
-        >
-          <option value="red">Red team</option>
-          <option value="white">White team</option>
-        </select>
-        <button onClick={addPlayer}>Add Player</button>
-      </div>
-
-      <div className="pitch">
-        <div className="midline"></div>
-        <div className="center-circle"></div>
-
-        {players.map((player) => (
-          <DraggablePlayer
-            key={player.id}
-            player={player}
-            onMove={movePlayer}
-          />
-        ))}
-      </div>
-    </div>
+  const parsedNames = useMemo(
+    () => namesInput.split("\n").map((name) => name.trim()).filter(Boolean),
+    [namesInput]
   );
-}
 
-function DraggablePlayer({
-  player,
-  onMove,
-}: {
-  player: Player;
-  onMove: (id: number, x: number, y: number) => void;
-}) {
-  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
-    const pitch = document.querySelector(".pitch");
-    if (!pitch) return;
+  const isValidCount = parsedNames.length === config.totalPlayers;
+  const redCount = players.filter((player) => player.team === "red").length;
+  const whiteCount = players.filter((player) => player.team === "white").length;
 
-    const rect = pitch.getBoundingClientRect();
+  const handleGameTypeChange = (nextType: GameType) => {
+    setGameType(nextType);
+    setNamesInput(getDefaultNames(nextType));
+  };
 
-    const x = e.clientX - rect.left - 25;
-    const y = e.clientY - rect.top - 25;
+  const startBoard = () => {
+    if (!isValidCount) return;
+    setPlayers(buildPlayers(parsedNames, gameType));
+    setStep("pitch");
+  };
 
-    const boundedX = Math.max(0, Math.min(x, rect.width - 50));
-    const boundedY = Math.max(0, Math.min(y, rect.height - 50));
+  const resetSetup = () => {
+    setStep("setup");
+    setPlayers([]);
+    setDraggingId(null);
+  };
 
-    onMove(player.id, boundedX, boundedY);
+  const reshuffleTeams = () => {
+    setPlayers(buildPlayers(parsedNames, gameType));
+    setDraggingId(null);
+  };
+
+  const handleDragStart = (id: number) => {
+    setDraggingId(id);
+  };
+
+  const handleDropOnPitch = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (draggingId === null) return;
+
+    const pitchRect = event.currentTarget.getBoundingClientRect();
+    const markerSize = 58;
+    const x = clamp(event.clientX - pitchRect.left - markerSize / 2, 8, pitchRect.width - markerSize - 8);
+    const y = clamp(event.clientY - pitchRect.top - markerSize / 2, 8, pitchRect.height - markerSize - 8);
+    const halfway = pitchRect.width / 2;
+    const team: Team = x + markerSize / 2 < halfway ? "red" : "white";
+
+    setPlayers((current) =>
+      current.map((player) =>
+        player.id === draggingId
+          ? {
+              ...player,
+              x,
+              y,
+              team,
+            }
+          : player
+      )
+    );
+
+    setDraggingId(null);
   };
 
   return (
-    <div
-      className={`player ${player.team}`}
-      draggable
-      onDragEnd={handleDragEnd}
-      style={{ left: `${player.x}px`, top: `${player.y}px` }}
-    >
-      {player.name}
+    <div className="app-shell">
+      {step === "setup" ? (
+        <div className="setup-page">
+          <div className="setup-card">
+            <h1>Lineup Builder</h1>
+            <p className="setup-copy">
+              Pick the match format, add all player names, then generate two evenly split teams on a vertical pitch.
+            </p>
+
+            <div className="format-row">
+              {(["5", "7", "8"] as GameType[]).map((type) => (
+                <button
+                  key={type}
+                  className={`format-button ${gameType === type ? "active" : ""}`}
+                  onClick={() => handleGameTypeChange(type)}
+                >
+                  {gameTypeOptions[type].label}
+                  <span>{gameTypeOptions[type].totalPlayers} players</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="names-header">
+              <h2>Player names</h2>
+              <span>
+                Add exactly <strong>{config.totalPlayers}</strong> names, one per line
+              </span>
+            </div>
+
+            <textarea
+              className="names-input"
+              value={namesInput}
+              onChange={(e) => setNamesInput(e.target.value)}
+              placeholder="One player name per line"
+            />
+
+            <div className="status-row">
+              <div className={`status-pill ${isValidCount ? "ok" : "warn"}`}>
+                {parsedNames.length} / {config.totalPlayers} players
+              </div>
+              <div className="status-hint">
+                Teams will be shuffled into {config.perTeam} red and {config.perTeam} white players.
+              </div>
+            </div>
+
+            <button className="primary-button" onClick={startBoard} disabled={!isValidCount}>
+              Generate teams
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="pitch-page">
+          <div className="topbar">
+            <div>
+              <h1>{config.label} team board</h1>
+              <p>Drag a player left or right to switch teams automatically.</p>
+            </div>
+
+            <div className="topbar-actions">
+              <div className="team-count red-count">Red: {redCount}</div>
+              <div className="team-count white-count">White: {whiteCount}</div>
+              <button className="secondary-button" onClick={reshuffleTeams}>Reshuffle</button>
+              <button className="secondary-button" onClick={resetSetup}>Back</button>
+            </div>
+          </div>
+
+          <div
+            className="vertical-pitch"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDropOnPitch}
+          >
+            <div className="pitch-half left-half"></div>
+            <div className="pitch-half right-half"></div>
+            <div className="halfway-line"></div>
+            <div className="center-circle"></div>
+            <div className="center-spot"></div>
+            <div className="penalty-box top-box"></div>
+            <div className="penalty-box bottom-box"></div>
+            <div className="goal-box top-goal-box"></div>
+            <div className="goal-box bottom-goal-box"></div>
+            <div className="goal top-goal"></div>
+            <div className="goal bottom-goal"></div>
+
+            {players.map((player) => (
+              <div
+                key={player.id}
+                className={`player-marker ${player.team}`}
+                draggable
+                onDragStart={() => handleDragStart(player.id)}
+                style={{ left: player.x, top: player.y }}
+              >
+                <span>{player.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
