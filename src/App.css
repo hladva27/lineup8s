@@ -17,6 +17,8 @@ body {
   color: white;
 }
 
+/* ================= SETUP PAGE ================= */
+
 .setup-page,
 .pitch-page {
   min-height: 100vh;
@@ -49,6 +51,8 @@ body {
   color: #cbd5e1;
 }
 
+/* ================= FORMAT BUTTONS ================= */
+
 .format-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -71,7 +75,6 @@ body {
   display: block;
   margin-top: 6px;
   font-size: 12px;
-  font-weight: 400;
   color: #cbd5e1;
 }
 
@@ -80,27 +83,26 @@ body {
   border-color: #16a34a;
 }
 
+/* ================= PLAYER SELECTION ================= */
+
 .names-header {
   display: flex;
   justify-content: space-between;
-  align-items: end;
-  gap: 12px;
   margin-bottom: 12px;
 }
 
 .names-header h2 {
   margin: 0;
-  font-size: 18px;
 }
 
 .names-header span {
-  font-size: 14px;
   color: #cbd5e1;
+  font-size: 14px;
 }
 
 .regular-players-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -110,99 +112,78 @@ body {
   background: #1e293b;
   color: white;
   border-radius: 999px;
-  padding: 10px 14px;
+  padding: 10px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
 }
 
 .player-chip.selected {
   background: #16a34a;
-  border-color: #16a34a;
 }
 
 .player-chip:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+  opacity: 0.4;
 }
+
+/* ================= CUSTOM NAME ================= */
 
 .custom-name-row {
   display: flex;
   gap: 10px;
   margin-bottom: 16px;
-  flex-wrap: wrap;
 }
 
 .custom-name-input {
   flex: 1;
-  min-width: 220px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #334155;
   background: #0f172a;
   color: white;
-  padding: 12px 14px;
-  font-size: 14px;
+  padding: 10px;
 }
+
+/* ================= SELECTED PLAYERS ================= */
 
 .selected-names-box {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  min-height: 52px;
-  padding: 12px;
-  border-radius: 16px;
-  border: 1px solid #334155;
-  background: #0f172a;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
 .selected-name-tag {
-  border: none;
-  border-radius: 999px;
   background: #1d4ed8;
-  color: white;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 700;
+  border-radius: 999px;
+  padding: 6px 10px;
   cursor: pointer;
 }
+
+/* ================= STATUS ================= */
 
 .status-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin: 16px 0;
-  flex-wrap: wrap;
-}
-
-.status-pill {
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 13px;
-  font-weight: 700;
+  margin-bottom: 16px;
 }
 
 .status-pill.ok {
   background: #166534;
+  padding: 6px 10px;
+  border-radius: 999px;
 }
 
 .status-pill.warn {
   background: #92400e;
+  padding: 6px 10px;
+  border-radius: 999px;
 }
 
-.status-hint {
-  color: #cbd5e1;
-  font-size: 14px;
-}
+/* ================= BUTTONS ================= */
 
 .primary-button,
 .secondary-button {
   border: none;
-  border-radius: 12px;
-  padding: 12px 18px;
-  font-size: 14px;
-  font-weight: 700;
+  border-radius: 10px;
+  padding: 10px 14px;
   cursor: pointer;
 }
 
@@ -212,39 +193,30 @@ body {
   width: 100%;
 }
 
-.primary-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .secondary-button {
   background: #1e293b;
   color: white;
   border: 1px solid #334155;
 }
 
+/* ================= TOPBAR ================= */
+
 .topbar {
-  max-width: 1200px;
-  margin: 0 auto 20px;
   display: flex;
   justify-content: space-between;
-  gap: 20px;
-  align-items: center;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
 .topbar-actions {
   display: flex;
-  gap: 10px;
-  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .team-count {
+  padding: 6px 10px;
   border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 13px;
-  font-weight: 700;
 }
 
 .red-count {
@@ -253,8 +225,10 @@ body {
 
 .white-count {
   background: white;
-  color: #111827;
+  color: black;
 }
+
+/* ================= PITCH ================= */
 
 .vertical-pitch {
   width: 100%;
@@ -270,18 +244,16 @@ body {
 
 .halfway-line {
   position: absolute;
-  left: 0;
   top: 50%;
-  height: 4px;
   width: 100%;
+  height: 4px;
   background: white;
-  transform: translateY(-50%);
 }
 
 .center-circle {
   position: absolute;
-  left: 50%;
   top: 50%;
+  left: 50%;
   width: 130px;
   height: 130px;
   border: 4px solid white;
@@ -291,8 +263,8 @@ body {
 
 .center-spot {
   position: absolute;
-  left: 50%;
   top: 50%;
+  left: 50%;
   width: 10px;
   height: 10px;
   background: white;
@@ -300,13 +272,20 @@ body {
   transform: translate(-50%, -50%);
 }
 
-.penalty-box {
+/* ================= GOALS ================= */
+
+.penalty-box,
+.goal-box,
+.goal {
   position: absolute;
   left: 50%;
+  transform: translateX(-50%);
+}
+
+.penalty-box {
   width: 280px;
   height: 130px;
   border: 4px solid white;
-  transform: translateX(-50%);
 }
 
 .top-box {
@@ -320,12 +299,9 @@ body {
 }
 
 .goal-box {
-  position: absolute;
-  left: 50%;
   width: 125px;
   height: 60px;
   border: 4px solid white;
-  transform: translateX(-50%);
 }
 
 .top-goal-box {
@@ -339,12 +315,9 @@ body {
 }
 
 .goal {
-  position: absolute;
-  left: 50%;
-  width: 72px;
+  width: 70px;
   height: 10px;
   background: white;
-  transform: translateX(-50%);
 }
 
 .top-goal {
@@ -355,69 +328,83 @@ body {
   bottom: 0;
 }
 
+/* ================= PLAYERS ================= */
+
 .player-marker {
   position: absolute;
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  cursor: grab;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
-  text-align: center;
   font-size: 10px;
-  font-weight: 700;
-  user-select: none;
+  text-align: center;
   transform: translate(-50%, -50%);
 }
 
-.player-marker span {
-  line-height: 1.1;
-}
-
 .player-marker.red {
-  background: #dc2626;
-  color: white;
-  border: 2px solid #991b1b;
+  background: red;
 }
 
 .player-marker.white {
   background: white;
-  color: #111827;
-  border: 2px solid #9ca3af;
+  color: black;
 }
 
-@media (max-width: 640px) {
-  .setup-page,
-  .pitch-page {
-    padding: 16px;
-  }
+/* ================= SESSION BAR ================= */
 
-  .setup-card {
-    padding: 18px;
-  }
+.session-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
 
-  .format-row {
-    grid-template-columns: 1fr;
-  }
+.session-input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+}
 
-  .names-header {
-    flex-direction: column;
-    align-items: start;
-  }
+.score-box {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
 
-  .regular-players-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.score-box input {
+  width: 60px;
+}
 
-  .vertical-pitch {
-    height: 720px;
-  }
+.score-dash {
+  font-size: 20px;
+}
 
-  .player-marker {
-    width: 52px;
-    height: 52px;
-    font-size: 9px;
-  }
+/* ================= HISTORY ================= */
+
+.history-panel {
+  margin-top: 20px;
+}
+
+.history-card {
+  background: #0f172a;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.history-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.small-button {
+  padding: 6px 10px;
+}
+
+.danger-button {
+  background: red;
 }
