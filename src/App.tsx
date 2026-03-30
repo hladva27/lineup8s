@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import html2canvas from "html2canvas";
 import "./App.css";
 
 type Team = "red" | "white";
@@ -124,6 +125,7 @@ export default function App() {
   const [customName, setCustomName] = useState<string>("");
   const [players, setPlayers] = useState<Player[]>([]);
   const [draggingId, setDraggingId] = useState<number | null>(null);
+  const pitchRef = useRef<HTMLDivElement | null>(null);
 
   const config = gameTypeOptions[gameType];
   const isValidCount = selectedNames.length === config.totalPlayers;
@@ -185,6 +187,20 @@ export default function App() {
     setStep("setup");
     setPlayers([]);
     setDraggingId(null);
+  }
+
+  async function saveAsImage() {
+    if (!pitchRef.current) return;
+
+    const canvas = await html2canvas(pitchRef.current, {
+      backgroundColor: null,
+      scale: 2,
+    });
+
+    const link = document.createElement("a");
+    link.download = `lineup-${gameType}-aside.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   }
 
   function handleDropOnPitch(e: React.DragEvent<HTMLDivElement>) {
@@ -327,6 +343,9 @@ export default function App() {
           <div className="topbar-actions">
             <div className="team-count red-count">Red: {redCount}</div>
             <div className="team-count white-count">White: {whiteCount}</div>
+            <button className="secondary-button" onClick={saveAsImage}>
+              Save PNG
+            </button>
             <button className="secondary-button" onClick={reshuffleTeams}>
               Reshuffle
             </button>
@@ -337,6 +356,7 @@ export default function App() {
         </div>
 
         <div
+          ref={pitchRef}
           className="vertical-pitch"
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDropOnPitch}
