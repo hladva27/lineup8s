@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import "./App.css";
 
@@ -12,6 +12,19 @@ type Player = {
   x: number;
   y: number;
 };
+
+type SessionRecord = {
+  id: string;
+  title: string;
+  date: string;
+  gameType: GameType;
+  locked: boolean;
+  redScore: number;
+  whiteScore: number;
+  players: Player[];
+};
+
+const STORAGE_KEY = "lineup8s-session-history-v1";
 
 const regularPlayers: string[] = [
   "Hardik",
@@ -116,6 +129,14 @@ function buildPlayers(names: string[], gameType: GameType): Player[] {
   });
 }
 
+function getTodayLabel(): string {
+  return new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export default function App() {
   const [step, setStep] = useState<"setup" | "pitch">("setup");
   const [gameType, setGameType] = useState<GameType>("8");
@@ -125,7 +146,30 @@ export default function App() {
   const [customName, setCustomName] = useState<string>("");
   const [players, setPlayers] = useState<Player[]>([]);
   const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [locked, setLocked] = useState<boolean>(false);
+  const [redScore, setRedScore] = useState<string>("0");
+  const [whiteScore, setWhiteScore] = useState<string>("0");
+  const [sessionTitle, setSessionTitle] = useState<string>("This Week");
+  const [history, setHistory] = useState<SessionRecord[]>([]);
   const pitchRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+      const parsed = JSON.parse(raw) as SessionRecord[];
+      if (Array.isArray(parsed)) {
+        setHistory(parsed);
+      }
+    } catch {
+      // ignore corrupt local storage
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  }, [history]);
 
   const config = gameTypeOptions[gameType];
   const isValidCount = selectedNames.length === config.totalPlayers;
@@ -176,9 +220,14 @@ export default function App() {
     if (!isValidCount) return;
     setPlayers(buildPlayers(selectedNames, gameType));
     setStep("pitch");
+    setLocked(false);
+    setRedScore("0");
+    setWhiteScore("0");
+    setSessionTitle(`Session ${history.length + 1}`);
   }
 
   function reshuffleTeams() {
+    if (locked) return;
     setPlayers(buildPlayers(selectedNames, gameType));
     setDraggingId(null);
   }
@@ -187,6 +236,7 @@ export default function App() {
     setStep("setup");
     setPlayers([]);
     setDraggingId(null);
+    setLocked(false);
   }
 
   async function saveAsImage() {
@@ -198,14 +248,46 @@ export default function App() {
     });
 
     const link = document.createElement("a");
-    link.download = `lineup-${gameType}-aside.png`;
+    link.download = `${sessionTitle || "lineup"}-${gameType}-aside.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   }
 
+  function saveSession() {
+    if (players.length === 0) return;
+
+    const record: SessionRecord = {
+      id: `${Date.now()}`,
+      title: sessionTitle.trim() || `Session ${history.length + 1}`,
+      date: getTodayLabel(),
+      gameType,
+      locked,
+      redScore: Number(redScore) || 0,
+      whiteScore: Number(whiteScore) || 0,
+      players,
+    };
+
+    setHistory([record, ...history]);
+  }
+
+  function loadSession(session: SessionRecord) {
+    setGameType(session.gameType);
+    setPlayers(session.players);
+    setSelectedNames(session.players.map((player) => player.name));
+    setSessionTitle(session.title);
+    setRedScore(String(session.redScore));
+    setWhiteScore(String(session.whiteScore));
+    setLocked(session.locked);
+    setStep("pitch");
+  }
+
+  function deleteSession(id: string) {
+    setHistory(history.filter((session) => session.id !== id));
+  }
+
   function handleDropOnPitch(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
-    if (draggingId === null) return;
+    if (draggingId === null || locked) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const x = clamp(e.clientX - rect.left, 30, rect.width - 30);
@@ -231,8 +313,7 @@ export default function App() {
           <div className="setup-card">
             <h1>Lineup Builder</h1>
             <p className="setup-copy">
-              Choose a format, select players, then generate equal shuffled
-              teams on a top-down football pitch.
+              Choose a format, select players, generate teams, then save the session and score for future weeks.
             </p>
 
             <div className="format-row">
@@ -325,6 +406,49 @@ export default function App() {
             >
               Generate teams
             </button>
+
+            <div className="history-panel">
+              <div className="history-header">
+                <h2>Saved sessions</h2>
+                <span>{history.length} saved</span>
+              </div>
+
+              {history.length === 0 ? (
+                <p className="history-empty">No saved sessions yet.</p>
+              ) : (
+                <div className="history-list">
+                  {history.map((session) => (
+                    <div key={session.id} className="history-card">
+                      <div>
+                        <strong>{session.title}</strong>
+                        <div className="history-meta">
+                          {gameTypeOptions[session.gameType].label} • {session.date}
+                        </div>
+                        <div className="history-score">
+                          Red {session.redScore} - {session.whiteScore} White
+                        </div>
+                      </div>
+                      <div className="history-actions">
+                        <button
+                          type="button"
+                          className="secondary-button small-button"
+                          onClick={() => loadSession(session)}
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-button small-button danger-button"
+                          onClick={() => deleteSession(session.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -337,7 +461,11 @@ export default function App() {
         <div className="topbar">
           <div>
             <h1>{config.label} team board</h1>
-            <p>Drag a player above or below halfway to switch team colour.</p>
+            <p>
+              {locked
+                ? "Teams are locked. You can save the result or export the image."
+                : "Drag a player above or below halfway to switch team colour."}
+            </p>
           </div>
 
           <div className="topbar-actions">
@@ -346,6 +474,12 @@ export default function App() {
             <button className="secondary-button" onClick={saveAsImage}>
               Save PNG
             </button>
+            <button
+              className={locked ? "secondary-button lock-button locked" : "secondary-button lock-button"}
+              onClick={() => setLocked(!locked)}
+            >
+              {locked ? "Unlock teams" : "Lock teams"}
+            </button>
             <button className="secondary-button" onClick={reshuffleTeams}>
               Reshuffle
             </button>
@@ -353,6 +487,37 @@ export default function App() {
               Back
             </button>
           </div>
+        </div>
+
+        <div className="session-bar">
+          <input
+            className="session-input"
+            value={sessionTitle}
+            onChange={(e) => setSessionTitle(e.target.value)}
+            placeholder="Session title"
+          />
+          <div className="score-box">
+            <span>Red</span>
+            <input
+              type="number"
+              min="0"
+              value={redScore}
+              onChange={(e) => setRedScore(e.target.value)}
+            />
+          </div>
+          <div className="score-dash">-</div>
+          <div className="score-box">
+            <span>White</span>
+            <input
+              type="number"
+              min="0"
+              value={whiteScore}
+              onChange={(e) => setWhiteScore(e.target.value)}
+            />
+          </div>
+          <button className="primary-button save-session-button" onClick={saveSession}>
+            Save session
+          </button>
         </div>
 
         <div
@@ -376,11 +541,13 @@ export default function App() {
             <div
               key={player.id}
               className={player.team === "red" ? "player-marker red" : "player-marker white"}
-              draggable
+              draggable={!locked}
               onDragStart={() => setDraggingId(player.id)}
               style={{
                 left: `${player.x}px`,
                 top: `${player.y}px`,
+                cursor: locked ? "default" : "grab",
+                opacity: locked ? 0.96 : 1,
               }}
             >
               <span>{player.name}</span>
