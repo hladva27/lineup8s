@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import "./App.css";
 
 type Team = "red" | "white";
@@ -12,7 +12,7 @@ type Player = {
   y: number;
 };
 
-const regularPlayers = [
+const regularPlayers: string[] = [
   "Hardik",
   "Mez",
   "Harj",
@@ -42,66 +42,78 @@ const gameTypeOptions: Record<
   "8": { label: "8-a-side", totalPlayers: 16, perTeam: 8 },
 };
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(Math.max(value, min), max);
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
 
-const shuffleArray = <T,>(items: T[]) => {
-  const copy = [...items];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
+function shuffleNames(names: string[]): string[] {
+  const arr = [...names];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
+    const temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
   }
-  return copy;
-};
+  return arr;
+}
 
-const getDefaultNames = (gameType: GameType) => {
-  const { totalPlayers } = gameTypeOptions[gameType];
-  return regularPlayers.slice(0, totalPlayers);
-};
+function getDefaultNames(gameType: GameType): string[] {
+  return regularPlayers.slice(0, gameTypeOptions[gameType].totalPlayers);
+}
 
-const buildPlayers = (names: string[], gameType: GameType): Player[] => {
-  const { perTeam } = gameTypeOptions[gameType];
-  const shuffledNames = shuffleArray(names);
+function buildPlayers(names: string[], gameType: GameType): Player[] {
+  const shuffled = shuffleNames(names);
+  const perTeam = gameTypeOptions[gameType].perTeam;
 
-  const pitchWidth = 500;
-  const pitchHeight = 850;
-  const topStartY = 110;
-  const topEndY = 360;
-  const bottomStartY = 500;
-  const bottomEndY = 750;
+  const topYs =
+    perTeam === 5
+      ? [110, 180, 250, 320, 390]
+      : perTeam === 7
+      ? [100, 160, 220, 280, 340, 400, 460]
+      : [95, 145, 195, 245, 295, 345, 395, 445];
 
-  const spacingTop = perTeam === 1 ? 0 : (topEndY - topStartY) / (perTeam - 1);
-  const spacingBottom =
-    perTeam === 1 ? 0 : (bottomEndY - bottomStartY) / (perTeam - 1);
+  const bottomYs =
+    perTeam === 5
+      ? [500, 570, 640, 710, 780]
+      : perTeam === 7
+      ? [390, 450, 510, 570, 630, 690, 750]
+      : [385, 435, 485, 535, 585, 635, 685, 735];
 
-  return shuffledNames.map((name, index) => {
-    const team: Team = index < perTeam ? "red" : "white";
+  const topXs =
+    perTeam === 5
+      ? [250, 150, 350, 190, 310]
+      : perTeam === 7
+      ? [250, 150, 350, 120, 380, 190, 310]
+      : [250, 150, 350, 120, 380, 170, 330, 250];
 
-    if (team === "red") {
-      const i = index;
-      const x = i % 2 === 0 ? 170 : 330;
-      const row = Math.floor(i / 2);
+  const bottomXs =
+    perTeam === 5
+      ? [250, 150, 350, 190, 310]
+      : perTeam === 7
+      ? [250, 150, 350, 120, 380, 190, 310]
+      : [250, 150, 350, 120, 380, 170, 330, 250];
+
+  return shuffled.map((name, index) => {
+    if (index < perTeam) {
       return {
         id: index + 1,
         name,
-        team,
-        x,
-        y: topStartY + row * spacingTop,
+        team: "red",
+        x: topXs[index],
+        y: topYs[index],
       };
     }
 
     const i = index - perTeam;
-    const x = i % 2 === 0 ? 170 : 330;
-    const row = Math.floor(i / 2);
     return {
       id: index + 1,
       name,
-      team,
-      x,
-      y: bottomStartY + row * spacingBottom,
+      team: "white",
+      x: bottomXs[i],
+      y: bottomYs[i],
     };
   });
-};
+}
 
 export default function App() {
   const [step, setStep] = useState<"setup" | "pitch">("setup");
@@ -109,38 +121,34 @@ export default function App() {
   const [selectedNames, setSelectedNames] = useState<string[]>(
     getDefaultNames("8")
   );
-  const [customName, setCustomName] = useState("");
+  const [customName, setCustomName] = useState<string>("");
   const [players, setPlayers] = useState<Player[]>([]);
   const [draggingId, setDraggingId] = useState<number | null>(null);
 
   const config = gameTypeOptions[gameType];
-
-  const namesText = useMemo(() => selectedNames.join("\n"), [selectedNames]);
-
   const isValidCount = selectedNames.length === config.totalPlayers;
-  const redCount = players.filter((player) => player.team === "red").length;
-  const whiteCount = players.filter((player) => player.team === "white").length;
+  const redCount = players.filter((p) => p.team === "red").length;
+  const whiteCount = players.filter((p) => p.team === "white").length;
 
-  const handleGameTypeChange = (nextType: GameType) => {
+  function handleGameTypeChange(nextType: GameType) {
     setGameType(nextType);
     setSelectedNames(getDefaultNames(nextType));
     setCustomName("");
-  };
+  }
 
-  const toggleRegularPlayer = (name: string) => {
+  function toggleRegularPlayer(name: string) {
     const exists = selectedNames.includes(name);
 
     if (exists) {
-      setSelectedNames((current) => current.filter((n) => n !== name));
+      setSelectedNames(selectedNames.filter((n) => n !== name));
       return;
     }
 
     if (selectedNames.length >= config.totalPlayers) return;
+    setSelectedNames([...selectedNames, name]);
+  }
 
-    setSelectedNames((current) => [...current, name]);
-  };
-
-  const addCustomName = () => {
+  function addCustomName() {
     const cleaned = customName.trim();
     if (!cleaned) return;
 
@@ -154,81 +162,61 @@ export default function App() {
 
     if (selectedNames.length >= config.totalPlayers) return;
 
-    setSelectedNames((current) => [...current, formatted]);
+    setSelectedNames([...selectedNames, formatted]);
     setCustomName("");
-  };
+  }
 
-  const removeSelectedName = (name: string) => {
-    setSelectedNames((current) => current.filter((n) => n !== name));
-  };
+  function removeSelectedName(name: string) {
+    setSelectedNames(selectedNames.filter((n) => n !== name));
+  }
 
-  const startBoard = () => {
+  function startBoard() {
     if (!isValidCount) return;
     setPlayers(buildPlayers(selectedNames, gameType));
     setStep("pitch");
-  };
+  }
 
-  const resetSetup = () => {
+  function reshuffleTeams() {
+    setPlayers(buildPlayers(selectedNames, gameType));
+    setDraggingId(null);
+  }
+
+  function goBack() {
     setStep("setup");
     setPlayers([]);
     setDraggingId(null);
-  };
+  }
 
-  const reshuffleTeams = () => {
-    setPlayers(buildPlayers(selectedNames, gameType));
-    setDraggingId(null);
-  };
-
-  const handleDragStart = (id: number) => {
-    setDraggingId(id);
-  };
-
-  const handleDropOnPitch = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
+  function handleDropOnPitch(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
     if (draggingId === null) return;
 
-    const pitchRect = event.currentTarget.getBoundingClientRect();
-    const markerSize = 58;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = clamp(e.clientX - rect.left, 30, rect.width - 30);
+    const y = clamp(e.clientY - rect.top, 30, rect.height - 30);
+    const halfway = rect.height / 2;
+    const nextTeam: Team = y < halfway ? "red" : "white";
 
-    const x = clamp(
-      event.clientX - pitchRect.left,
-      markerSize / 2,
-      pitchRect.width - markerSize / 2
-    );
-    const y = clamp(
-      event.clientY - pitchRect.top,
-      markerSize / 2,
-      pitchRect.height - markerSize / 2
-    );
-
-    const halfway = pitchRect.height / 2;
-    const team: Team = y < halfway ? "red" : "white";
-
-    setPlayers((current) =>
-      current.map((player) =>
+    setPlayers(
+      players.map((player) =>
         player.id === draggingId
-          ? {
-              ...player,
-              x,
-              y,
-              team,
-            }
+          ? { ...player, x, y, team: nextTeam }
           : player
       )
     );
 
     setDraggingId(null);
-  };
+  }
 
-  return (
-    <div className="app-shell">
-      {step === "setup" ? (
+  if (step === "setup") {
+    return (
+      <div className="app-shell">
         <div className="setup-page">
           <div className="setup-card">
             <h1>Lineup Builder</h1>
             <p className="setup-copy">
-              Choose your format, select players, then generate equal shuffled
-              teams on a full top-down pitch.
+              Choose a format, select players, then generate equal shuffled
+              teams on a top-down football pitch.
             </p>
 
             <div className="format-row">
@@ -236,7 +224,11 @@ export default function App() {
                 <button
                   key={type}
                   type="button"
-                  className={`format-button ${gameType === type ? "active" : ""}`}
+                  className={
+                    gameType === type
+                      ? "format-button active"
+                      : "format-button"
+                  }
                   onClick={() => handleGameTypeChange(type)}
                 >
                   {gameTypeOptions[type].label}
@@ -262,7 +254,7 @@ export default function App() {
                   <button
                     key={name}
                     type="button"
-                    className={`player-chip ${selected ? "selected" : ""}`}
+                    className={selected ? "player-chip selected" : "player-chip"}
                     onClick={() => toggleRegularPlayer(name)}
                     disabled={disabled}
                   >
@@ -295,7 +287,6 @@ export default function App() {
                   type="button"
                   className="selected-name-tag"
                   onClick={() => removeSelectedName(name)}
-                  title="Remove player"
                 >
                   {name} ×
                 </button>
@@ -303,19 +294,13 @@ export default function App() {
             </div>
 
             <div className="status-row">
-              <div className={`status-pill ${isValidCount ? "ok" : "warn"}`}>
+              <div className={isValidCount ? "status-pill ok" : "status-pill warn"}>
                 {selectedNames.length} / {config.totalPlayers} players
               </div>
               <div className="status-hint">
                 Teams will be shuffled into {config.perTeam} vs {config.perTeam}
               </div>
             </div>
-
-            <textarea
-              className="names-input"
-              value={namesText}
-              readOnly
-            />
 
             <button
               className="primary-button"
@@ -326,59 +311,63 @@ export default function App() {
             </button>
           </div>
         </div>
-      ) : (
-        <div className="pitch-page">
-          <div className="topbar">
-            <div>
-              <h1>{config.label} team board</h1>
-              <p>Drag a player above or below halfway to switch team colour.</p>
-            </div>
+      </div>
+    );
+  }
 
-            <div className="topbar-actions">
-              <div className="team-count red-count">Red: {redCount}</div>
-              <div className="team-count white-count">White: {whiteCount}</div>
-              <button className="secondary-button" onClick={reshuffleTeams}>
-                Reshuffle
-              </button>
-              <button className="secondary-button" onClick={resetSetup}>
-                Back
-              </button>
-            </div>
+  return (
+    <div className="app-shell">
+      <div className="pitch-page">
+        <div className="topbar">
+          <div>
+            <h1>{config.label} team board</h1>
+            <p>Drag a player above or below halfway to switch team colour.</p>
           </div>
 
-          <div
-            className="vertical-pitch"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDropOnPitch}
-          >
-            <div className="halfway-line"></div>
-            <div className="center-circle"></div>
-            <div className="center-spot"></div>
-
-            <div className="penalty-box top-box"></div>
-            <div className="penalty-box bottom-box"></div>
-            <div className="goal-box top-goal-box"></div>
-            <div className="goal-box bottom-goal-box"></div>
-            <div className="goal top-goal"></div>
-            <div className="goal bottom-goal"></div>
-
-            {players.map((player) => (
-              <div
-                key={player.id}
-                className={`player-marker ${player.team}`}
-                draggable
-                onDragStart={() => handleDragStart(player.id)}
-                style={{
-                  left: `${player.x}px`,
-                  top: `${player.y}px`,
-                }}
-              >
-                <span>{player.name}</span>
-              </div>
-            ))}
+          <div className="topbar-actions">
+            <div className="team-count red-count">Red: {redCount}</div>
+            <div className="team-count white-count">White: {whiteCount}</div>
+            <button className="secondary-button" onClick={reshuffleTeams}>
+              Reshuffle
+            </button>
+            <button className="secondary-button" onClick={goBack}>
+              Back
+            </button>
           </div>
         </div>
-      )}
+
+        <div
+          className="vertical-pitch"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDropOnPitch}
+        >
+          <div className="halfway-line"></div>
+          <div className="center-circle"></div>
+          <div className="center-spot"></div>
+
+          <div className="penalty-box top-box"></div>
+          <div className="penalty-box bottom-box"></div>
+          <div className="goal-box top-goal-box"></div>
+          <div className="goal-box bottom-goal-box"></div>
+          <div className="goal top-goal"></div>
+          <div className="goal bottom-goal"></div>
+
+          {players.map((player) => (
+            <div
+              key={player.id}
+              className={player.team === "red" ? "player-marker red" : "player-marker white"}
+              draggable
+              onDragStart={() => setDraggingId(player.id)}
+              style={{
+                left: `${player.x}px`,
+                top: `${player.y}px`,
+              }}
+            >
+              <span>{player.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
