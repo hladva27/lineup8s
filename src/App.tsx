@@ -66,14 +66,37 @@ const buildPlayers = (names: string[], gameType: GameType): Player[] => {
   });
 };
 
+const regularPlayers = [
+  "Hardik",
+  "Mez",
+  "Harj",
+  "Suj",
+  "Abi",
+  "Arnie",
+  "Callum",
+  "Prem",
+  "Shyam",
+  "Kunal",
+  "Pranav",
+  "Josh",
+  "Kiran",
+  "Pranny",
+  "Sukh",
+  "Dil",
+  "Sandeep",
+  "Amraj",
+];
+
 const getDefaultNames = (gameType: GameType) => {
   const { totalPlayers } = gameTypeOptions[gameType];
-  return Array.from({ length: totalPlayers }, (_, index) => `Player ${index + 1}`).join("\n");
+  return regularPlayers.slice(0, totalPlayers).join("
+");
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 export default function App() {
+  const [customName, setCustomName] = useState("");
   const [step, setStep] = useState<"setup" | "pitch">("setup");
   const [gameType, setGameType] = useState<GameType>("8");
   const [namesInput, setNamesInput] = useState(getDefaultNames("8"));
@@ -83,7 +106,8 @@ export default function App() {
   const config = gameTypeOptions[gameType];
 
   const parsedNames = useMemo(
-    () => namesInput.split("\n").map((name) => name.trim()).filter(Boolean),
+    () => namesInput.split("
+").map((name) => name.trim()).filter(Boolean),
     [namesInput]
   );
 
@@ -93,7 +117,56 @@ export default function App() {
 
   const handleGameTypeChange = (nextType: GameType) => {
     setGameType(nextType);
-    setNamesInput(getDefaultNames(nextType));
+
+    const nextDefaultNames = regularPlayers.slice(0, gameTypeOptions[nextType].totalPlayers);
+    const currentCustomNames = namesInput
+      .split("
+")
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .filter((name) => !regularPlayers.includes(name));
+
+    setNamesInput([...nextDefaultNames, ...currentCustomNames].slice(0, gameTypeOptions[nextType].totalPlayers).join("
+"));
+  };
+
+  const addCustomName = () => {
+    const cleaned = customName.trim();
+    if (!cleaned) return;
+
+    const formatted = cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
+    const existing = namesInput
+      .split("
+")
+      .map((name) => name.trim())
+      .filter(Boolean);
+
+    if (existing.includes(formatted)) {
+      setCustomName("");
+      return;
+    }
+
+    setNamesInput([...existing, formatted].join("
+"));
+    setCustomName("");
+  };
+
+  const toggleRegularPlayer = (name: string) => {
+    const existing = namesInput
+      .split("
+")
+      .map((playerName) => playerName.trim())
+      .filter(Boolean);
+
+    if (existing.includes(name)) {
+      setNamesInput(existing.filter((playerName) => playerName !== name).join("
+"));
+      return;
+    }
+
+    if (existing.length >= config.totalPlayers) return;
+    setNamesInput([...existing, name].join("
+"));
   };
 
   const startBoard = () => {
@@ -170,8 +243,39 @@ export default function App() {
             <div className="names-header">
               <h2>Player names</h2>
               <span>
-                Add exactly <strong>{config.totalPlayers}</strong> names, one per line
+                Select or add exactly <strong>{config.totalPlayers}</strong> names
               </span>
+            </div>
+
+            <div className="regular-players-grid">
+              {regularPlayers.map((name) => {
+                const selected = parsedNames.includes(name);
+                const disabled = !selected && parsedNames.length >= config.totalPlayers;
+
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    className={`player-chip ${selected ? "selected" : ""}`}
+                    onClick={() => toggleRegularPlayer(name)}
+                    disabled={disabled}
+                  >
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="custom-name-row">
+              <input
+                className="custom-name-input"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                placeholder="Add a new player name"
+              />
+              <button type="button" className="secondary-button" onClick={addCustomName}>
+                Add name
+              </button>
             </div>
 
             <textarea
